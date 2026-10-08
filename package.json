@@ -4,7 +4,10 @@
   "description": "Computer Networks CA3",
   "main": "server.js",
   "scripts": {
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "watch": "webpack --watch"
   },
   "author": "Fergus O'Hagan",
   "license": "ISC",
@@ -13,6 +16,11 @@
     "socket.io": "^3.1.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "@babel/core": "^7.22.20",
+    "@babel/preset-env": "^7.22.20",
+    "babel-loader": "^8.3.0",
+    "nodemon": "^3.1.7",
+    "webpack": "^5.111.1",
+    "webpack-cli": "^4.10.0"
   }
 }
