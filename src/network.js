@@ -2,6 +2,11 @@
 
 var socket = null;
 
+function getRoomId() {
+  var hash = (window.location && window.location.hash) ? window.location.hash.replace(/^#/, '') : '';
+  return hash || 'lobby';
+}
+
 function connect() {
   if (socket) return socket;
   if (!window.io) {
@@ -14,6 +19,7 @@ function connect() {
   socket.on('connect', function() {
     console.log('network connected', socket.id);
     socket.emit('join', {
+      roomId: getRoomId(),
       x: 0,
       y: 0,
       pose: 'idle',
@@ -23,12 +29,16 @@ function connect() {
 
   socket.on('joined', function(data) {
     console.log('joined ok', data);
+    if (data && data.roomId) {
+      window.location.hash = '#' + data.roomId;
+    }
   });
 
   socket.on('playerJoined', function(player) {
     window.dispatchEvent(new CustomEvent('network-player-joined', {
       detail: player
     }));
+    console.log('player joined', player);
   });
 
   socket.on('playerLeft', function(player) {
@@ -40,6 +50,12 @@ function connect() {
   socket.on('state-update', function(state) {
     window.dispatchEvent(new CustomEvent('network-state-update', {
       detail: state
+    }));
+  });
+
+  socket.on('start', function(data) {
+    window.dispatchEvent(new CustomEvent('network-start', {
+      detail: data || {}
     }));
   });
 

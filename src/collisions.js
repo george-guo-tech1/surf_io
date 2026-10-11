@@ -102,6 +102,8 @@
                             this.collisionHappened(c, l) && 0 === l.crashTimer && (l.crashTimer = 1)
                         }
                     else {
+                        //作弊
+                        s.Game.system.shields=1;
                         if (s.Game.system.shields > 0) {
                             this.enemyStun(e[a]);
                             continue
@@ -174,6 +176,7 @@
             t.move(0, -20),
             t.crashTimer = 2,
             r.Player.instance.dogTimer = 4,
+            
             s.Game.system.shields <= 1 ? s.Game.system.removeAllShields() : s.Game.system.removeShield()
         }
         ,

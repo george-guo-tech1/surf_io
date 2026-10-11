@@ -42,6 +42,7 @@
             this.maxAirSpeed = 1.5 * this.maxSpeed,
             this.maxBoostSpeed = 1.75 * this.maxSpeed,
             this.xSpeed = 0,
+            this.trackX = 0,
             this.ySpeed = 0,
             this.state = "stop",
             this.airTimer = 0,
@@ -66,7 +67,9 @@
             this.surfRefreshCounter = 0,
             this.surfRefreshRate = r.Game.system.fps / 10,
             this.whichFrame = 0,
-            this.whichPose = this.character
+            this.whichPose = this.character,
+            this.readyToStart = !1,
+            this.pendingStartState = "down"
         }
         ,
         e.prototype.updateInterval = function() {
@@ -76,6 +79,10 @@
         e.prototype.update = function() {
             this.updateInterval(),
             this.updatePlayerState(),
+            this.trackX += this.xSpeed * r.Game.system.interval,
+            // 钳制横向赛道范围（和 spawn.js 障碍物生成范围 -928..1312 一致），
+            // 撞到左右边界时停止横向滚动，避免无限横移把障碍物全部甩出屏幕。
+            this.trackX < -928 ? (this.trackX = -928, this.xSpeed = 0) : this.trackX > 1312 && (this.trackX = 1312, this.xSpeed = 0),
             this.move(0, 0),
             this.surfRefreshCounter % this.surfRefreshRate == 0 && (this.surfRefreshCounter = 0,
             this.surfboardPose = (this.surfboardPose + 1) % 3,
@@ -172,9 +179,9 @@
         }
         ,
         e.prototype.renderCharacterSelection = function(t) {
-            for (var e = 0; e < this.totalCharacters; e++)
-                this.surfboardSprite.draw(t, Math.floor(this.x) + 116 * (e - this.character), Math.floor(this.y), 5, this.surfboardPose),
-                this.sprite.draw(t, Math.floor(this.x) + 116 * (e - this.character), Math.floor(this.y), 5, e)
+            // 只显示当前框选的这个角色（居中），不再渲染整排待选角色，避免和玩家 2 重叠
+            this.surfboardSprite.draw(t, Math.floor(this.x), Math.floor(this.y), 5, this.surfboardPose);
+            this.sprite.draw(t, Math.floor(this.x), Math.floor(this.y), 5, this.character)
         }
         ,
         e.prototype.objectToNewArray = function(t, e, i) {
@@ -288,14 +295,31 @@
         }
         ,
         e.prototype.draw = function(e) {
-            "waiting" !== r.Game.system.gameState ? (this.collectedDog && "win" !== this.state && this.shieldSprite.draw(e, Math.floor(this.x) - 32, Math.floor(this.y) - 24, 4 - r.Game.system.shields, this.surfboardPose),
-            this.updatePlayerFrame(),
-            this.surfboardSprite.draw(e, Math.floor(this.x), Math.floor(this.y), this.whichFrame, this.surfboardPose),
-            t.prototype.draw.call(this, e),
-            this.dogTimer > 0 ? (this.dogFrame = 13,
-            this.dogOffset = 32) : (this.dogFrame = this.whichFrame,
-            this.dogOffset = 0),
-            this.collectedDog && this.dogSprite.draw(e, Math.floor(this.x), Math.floor(this.y) - this.dogOffset, this.dogFrame, 0)) : this.renderCharacterSelection(e)
+            // console.log('draw player', this.state, this.whichFrame, this.whichPose, this.x, this.y);
+            if ("waiting" === r.Game.system.gameState) {
+                this.renderCharacterSelection(e);
+                return;
+            }
+
+            if (this.collectedDog && "win" !== this.state) {
+                this.shieldSprite.draw(e, Math.floor(this.x) - 32, Math.floor(this.y) - 24, 4 - r.Game.system.shields, this.surfboardPose);
+            }
+
+            this.updatePlayerFrame();
+            this.surfboardSprite.draw(e, Math.floor(this.x), Math.floor(this.y), this.whichFrame, this.surfboardPose);
+            t.prototype.draw.call(this, e);
+
+            if (this.dogTimer > 0) {
+                this.dogFrame = 13;
+                this.dogOffset = 32;
+            } else {
+                this.dogFrame = this.whichFrame;
+                this.dogOffset = 0;
+            }
+
+            if (this.collectedDog) {
+                this.dogSprite.draw(e, Math.floor(this.x), Math.floor(this.y) - this.dogOffset, this.dogFrame, 0);
+            }
         }
         ,
         e

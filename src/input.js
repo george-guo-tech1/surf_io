@@ -73,8 +73,8 @@
                             break;
                         case 3:
                             s.Game.system.krakenCodeUsed = !0,
-                            a.Spawn.instance.nextEnemy = 100,
-                            a.Spawn.instance.freqEnemy = 50
+                            a.Spawn.instance.nextEnemy = 750,
+                            a.Spawn.instance.freqEnemy = 375
                         }
                         i = !1,
                         this.codePosition = 0,
@@ -92,16 +92,15 @@
                 }
             },
             onKeydownReady: function(t) {
-                c.isDown(c.DOWN) || c.isDown(c.S) || c.isDown(c.ENTER) || c.isDown(c.SPACE) ? (r.Player.instance.state = "down",
-                s.Game.system.gameState = "playing",
-                o.recordGameStart(),
-                n.Interface.system.hideScreen()) : c.isDown(c.LEFT) || c.isDown(c.A) ? (r.Player.instance.state = "left-down",
-                s.Game.system.gameState = "playing",
-                o.recordGameStart(),
-                n.Interface.system.hideScreen()) : (c.isDown(c.RIGHT) || c.isDown(c.D)) && (r.Player.instance.state = "right-down",
-                s.Game.system.gameState = "playing",
-                o.recordGameStart(),
-                n.Interface.system.hideScreen())
+                // 第二次按空格 = 起跑：只记录起跑方向和 ready 标记，等服务器通知双方都 ready 后统一开始
+                var startKey = c.isDown(c.DOWN) || c.isDown(c.S) || c.isDown(c.ENTER) || c.isDown(c.SPACE) || c.isDown(c.LEFT) || c.isDown(c.A) || c.isDown(c.RIGHT) || c.isDown(c.D);
+                if (!startKey)
+                    return;
+                var dir = "down";
+                c.isDown(c.LEFT) || c.isDown(c.A) ? dir = "left-down" : (c.isDown(c.RIGHT) || c.isDown(c.D)) && (dir = "right-down");
+                r.Player.instance.pendingStartState = dir,
+                r.Player.instance.readyToStart = !0,
+                n.Interface.system.showWaitingForOpponent()
             },
             onKeydownModal: function(t) {},
             onKeydown: function(t) {

@@ -89,6 +89,11 @@
             this.updateIcons()
         }
         ,
+        t.prototype.showWaitingForOpponent = function() {
+            this.main.innerHTML = "READY!",
+            this.cta.innerHTML = "WAITING FOR OPPONENT..."
+        }
+        ,
         t.prototype.hideScreen = function() {
             this.title.setAttribute("style", "opacity: 0;"),
             this.info.setAttribute("style", "opacity: 0;")

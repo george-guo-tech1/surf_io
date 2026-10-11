@@ -55,7 +55,9 @@
             this.shields = 0,
             this.maxShields = 3,
             this.distance = 0,
-            this.winDistance = 7900,
+            this.seed = 0,
+            // distance 现在是真实像素（原 7900 满速帧 × 7.5 基准满速）
+            this.winDistance = 59250,
             this.clearPath = !1,
             this.dodges = 0,
             this.avoids = 0,
@@ -157,24 +159,25 @@
 
             if (window.Network && window.Network.sendState && window.currentPlayer) {
                 window.Network.sendState({
-                    x: window.currentPlayer.x,
-                    y: window.currentPlayer.y,
-                    pose: window.currentPlayer.pose || "idle",
-                    frame: window.currentPlayer.frame || 0,
-                    vx: window.currentPlayer.vx || 0,
-                    vy: window.currentPlayer.vy || 0,
-                    shield: !!window.currentPlayer.shield
+                    state: window.currentPlayer.state,
+                    frame: window.currentPlayer.whichFrame,
+                    character: window.currentPlayer.character,
+                    surfboardPose: window.currentPlayer.surfboardPose,
+                    distance: this.distance,
+                    trackX: window.currentPlayer.trackX,
+                    shield: !!window.currentPlayer.collectedDog,
+                    ready: !!window.currentPlayer.readyToStart
                 });
             }
         }
         ,
         t.prototype.updateAll = function() {
-            h.Player.instance.isMoving && (this.distance += h.Player.instance.ySpeed * t.system.interval / h.Player.instance.maxSpeed,
+            h.Player.instance.isMoving && (this.distance += h.Player.instance.ySpeed * t.system.interval,
             this.updateFrames % (1 * this.fps) == 0 && this.background.updateGradient(this.distance, this.winDistance),
             this.background.updateWater(0, 0, this.interval, h.Player.instance.xSpeed, h.Player.instance.ySpeed),
             this.interface.update(),
             this.updateFrames++,
-            this.distance < this.winDistance - 1.5 * this.height / h.Player.instance.maxSpeed ? this.spawn.update() : this.distance > this.winDistance - this.height / 1.5 / h.Player.instance.maxSpeed && !this.islandspawn.isSpawned && (this.clearPath = !0,
+            this.distance < this.winDistance - 1.5 * this.height ? this.spawn.update() : this.distance > this.winDistance - this.height / 1.5 && !this.islandspawn.isSpawned && (this.clearPath = !0,
             this.islandspawn.isSpawned = !0,
             this.islandspawn.spawnIsland())),
             this.collisions.update(),
@@ -197,6 +200,7 @@
         }
         ,
         t.prototype.drawAll = function() {
+            // console.log('drawAll called');
             var t = this;
             this.ctx.clearRect(0, 0, this.width, this.height),
             this.gameObjects.forEach(function(e) {
@@ -258,18 +262,15 @@
         ,
         t.prototype.applyRemoteState = function(state) {
             if (!state || !state.id) return;
+            if (window.currentPlayer && state.id === window.currentPlayer.id) return;
 
             if (!this.remotePlayers[state.id]) {
-                this.remotePlayers[state.id] = {
-                    id: state.id,
-                    x: state.x || 0,
-                    y: state.y || 0,
-                    pose: state.pose || 'idle',
-                    frame: state.frame || 0,
-                    vx: state.vx || 0,
-                    vy: state.vy || 0,
-                    shield: !!state.shield
-                };
+                this.remotePlayers[state.id] = this.spawn.spawnRemotePlayer(state.id, state.x, state.y, state);
+                return;
+            }
+
+            if (this.remotePlayers[state.id].applyState) {
+                this.remotePlayers[state.id].applyState(state);
                 return;
             }
 
@@ -281,6 +282,25 @@
             p.vx = state.vx || p.vx;
             p.vy = state.vy || p.vy;
             p.shield = !!state.shield;
+        }
+        ,
+        t.prototype.removeRemotePlayer = function(id) {
+            var rp = this.remotePlayers && this.remotePlayers[id];
+            if (!rp) return;
+            this.objMain = this.objMain.filter(function(o) {
+                return o !== rp;
+            });
+            delete this.remotePlayers[id];
+        }
+        ,
+        t.prototype.startRace = function(seed) {
+            if ("ready" !== this.gameState) return;
+            var e = h.Player.instance;
+            this.seed = seed || 0;
+            e.state = e.pendingStartState || "down";
+            this.gameState = "playing";
+            p.recordGameStart();
+            this.interface.hideScreen();
         }
         ,
         t

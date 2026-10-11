@@ -4,7 +4,7 @@
   "description": "Computer Networks CA3",
   "main": "server.js",
   "scripts": {
-    "dev": "node server.js",
+    "dev": "nodemon server.js",
     "build": "webpack --mode production",
     "build:dev": "webpack --mode development",
     "watch": "webpack --watch"
