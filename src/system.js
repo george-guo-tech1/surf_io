@@ -8,6 +8,7 @@
       , h = require('./player.js')
       , c = require('./islandSpawn.js')
       , p = require('./record.js')
+      , g = require('./sprites.js')
       , l = function() {
         function t(e, i) {
             if (t.system)
@@ -56,8 +57,8 @@
             this.maxShields = 3,
             this.distance = 0,
             this.seed = 0,
-            // distance 现在是真实像素（原 7900 满速帧 × 7.5 基准满速）
-            this.winDistance = 59250,
+            // distance 是像素（满速时每帧 +7.5px）；29625 = 3950 帧 × 7.5 = 原赛道的一半
+            this.winDistance = 29625,
             this.clearPath = !1,
             this.dodges = 0,
             this.avoids = 0,
@@ -69,7 +70,8 @@
             this.infinitePowerups = !1,
             this.krakenCodeUsed = !1,
             this.updateFrames = 0,
-            this.updateEnding = !1
+            this.updateEnding = !1,
+            this.finished = !1
         }
         ,
         t.prototype.resetGame = function() {
@@ -166,7 +168,8 @@
                     distance: this.distance,
                     trackX: window.currentPlayer.trackX,
                     shield: !!window.currentPlayer.collectedDog,
-                    ready: !!window.currentPlayer.readyToStart
+                    ready: !!window.currentPlayer.readyToStart,
+                    finished: !!this.finished
                 });
             }
         }
@@ -203,9 +206,23 @@
             // console.log('drawAll called');
             var t = this;
             this.ctx.clearRect(0, 0, this.width, this.height),
+            this.drawBoundaries(),
             this.gameObjects.forEach(function(e) {
                 return e.draw(t.ctx)
             })
+        }
+        ,
+        t.prototype.drawBoundaries = function() {
+            // 左右边界墙：固定在地图左右边界（赛道坐标 -992 / +1376），随世界滚动
+            var spr = g.objects64Sprite()
+              , anchor = Math.floor(this.width / 2) - 32
+              , tx = h.Player.instance ? h.Player.instance.trackX : 0
+              , leftX = anchor - 992 - tx
+              , rightX = anchor + 1376 - tx
+              , off = this.distance % 64;
+            for (var y = -off; y < this.height; y += 64)
+                spr.draw(this.ctx, Math.floor(leftX), Math.floor(y), 0, 0),
+                spr.draw(this.ctx, Math.floor(rightX), Math.floor(y), 0, 0)
         }
         ,
         t.prototype.checkWinDistance = function() {
@@ -244,12 +261,25 @@
             this.removeAllPowerups()
         }
         ,
+        t.prototype.opponentFinished = function() {
+            // 对方先到终点，本地判负结束
+            if ("playing" !== this.gameState && "ready" !== this.gameState)
+                return;
+            this.gameState = "over",
+            h.Player.instance.lose(),
+            p.recordGameEnd(this, h.Player.instance),
+            this.interface.drawGameOver("OPPONENT WON"),
+            this.removeAllLives(),
+            this.removeAllPowerups()
+        }
+        ,
         t.prototype.gameWin = function() {
             this.islandspawn.moveIsland(),
             this.distance = this.winDistance,
             this.interface.drawGameWin(),
             h.Player.instance.win(),
             this.gameState = "over",
+            this.finished = !0,
             p.recordGameEnd(this, h.Player.instance),
             setTimeout(function() {
                 c.IslandSpawn.instance.openChest()
@@ -263,6 +293,10 @@
         t.prototype.applyRemoteState = function(state) {
             if (!state || !state.id) return;
             if (window.currentPlayer && state.id === window.currentPlayer.id) return;
+
+            // 对方已到达终点：本地同步判负结束
+            if (state.finished)
+                this.opponentFinished();
 
             if (!this.remotePlayers[state.id]) {
                 this.remotePlayers[state.id] = this.spawn.spawnRemotePlayer(state.id, state.x, state.y, state);

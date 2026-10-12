@@ -599,17 +599,35 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
       s.Game.system.infiniteLives && ((e = document.createElement("div")).setAttribute("class", "icon infinite"), this.lives.appendChild(e));
       s.Game.system.infinitePowerups && ((i = document.createElement("div")).setAttribute("class", "icon infinite"), this.powerups.appendChild(i));
     }, t.prototype.buildCharacterSelection = function () {
-      this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "USE <span><</span> <span>></span> AND <span>SPACE</span> TO SELECT A SURFER";
+      this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "USE <span><</span> <span>></span> AND <span>SPACE</span> TO SELECT A SURFER", this.buildInfiniteLivesToggle();
+    }, t.prototype.buildInfiniteLivesToggle = function () {
+      // 选人界面的"无限生命"勾选项：只影响本地玩家（单方面）
+      var old = $("infinite-lives-toggle");
+      old && old.parentNode && old.parentNode.removeChild(old);
+      var label = document.createElement("label");
+      label.setAttribute("id", "infinite-lives-toggle");
+      label.style.cssText = "display:block;margin-top:12px;font-size:16px;color:#ffffff;text-shadow:1px 1px 2px #000000;cursor:pointer;";
+      label.innerHTML = "<input type='checkbox' id='infinite-lives-checkbox' style='vertical-align:middle;'> 无限生命";
+      label.style = "z-index:999;position:absolute;left:20px;";
+      this.title.appendChild(label);
+      var cb = $("infinite-lives-checkbox");
+      cb.checked = !!s.Game.system.infiniteLives;
+      cb.addEventListener("change", function () {
+        s.Game.system.infiniteLives = cb.checked, s.Game.system["interface"].updateIcons();
+      });
+    }, t.prototype.removeInfiniteLivesToggle = function () {
+      var old = $("infinite-lives-toggle");
+      old && old.parentNode && old.parentNode.removeChild(old);
     }, t.prototype.buildStartScreen = function () {
-      this.info.setAttribute("style", "opacity: 1;"), this.select.innerHTML = "", this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "PRESS <span>SPACE</span> TO START SURFING", this.info.innerHTML = "<h2>How to play</h2><p><span class='icon buttons-small'></span> Use the arrow keys or WASD keys to surf</p><p><span class='icon life-small'></span> Hitting a solid obstacle removes a life</p><p><span class='icon powerup-small'></span> Press F to use your speed boost powerup</p><p><span class='icon shield-small'></span> Rescue the dog for shields from enemies</p><p><span class='icon counter-small'></span> A surprise is waiting at the finish line</p>", this.stats.setAttribute("style", "opacity: 1;"), this.updateIcons();
+      this.removeInfiniteLivesToggle(), this.info.setAttribute("style", "opacity: 1;"), this.select.innerHTML = "", this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "PRESS <span>SPACE</span> TO START SURFING", this.info.innerHTML = "<h2>How to play</h2><p><span class='icon buttons-small'></span> Use the arrow keys or WASD keys to surf</p><p><span class='icon life-small'></span> Hitting a solid obstacle removes a life</p><p><span class='icon powerup-small'></span> Press F to use your speed boost powerup</p><p><span class='icon shield-small'></span> Rescue the dog for shields from enemies</p><p><span class='icon counter-small'></span> A surprise is waiting at the finish line</p>", this.stats.setAttribute("style", "opacity: 1;"), this.updateIcons();
     }, t.prototype.showWaitingForOpponent = function () {
       this.main.innerHTML = "READY!", this.cta.innerHTML = "WAITING FOR OPPONENT...";
     }, t.prototype.hideScreen = function () {
       this.title.setAttribute("style", "opacity: 0;"), this.info.setAttribute("style", "opacity: 0;");
     }, t.prototype.clearScreen = function () {
       this.stats.innerHTML = "", this.title.innerHTML = "", this.select.innerHTML = "", this.info.innerHTML = "", this.modal = $("win-modal"), this.credits = $("credit-modal"), this.modal && document.body.removeChild(this.modal), this.credits && document.body.removeChild(this.credits);
-    }, t.prototype.drawGameOver = function () {
-      this.title.setAttribute("style", "opacity: 1;"), this.main.innerHTML = "TRY AGAIN", this.cta.innerHTML = "PRESS <span>SPACE</span> TO SURF AGAIN";
+    }, t.prototype.drawGameOver = function (msg) {
+      this.title.setAttribute("style", "opacity: 1;"), this.main.innerHTML = msg || "TRY AGAIN", this.cta.innerHTML = "PRESS <span>SPACE</span> TO SURF AGAIN";
     }, t.prototype.drawGameWin = function () {
       this.updateCounter(), this.title.setAttribute("style", "opacity: 1;"), this.main.innerHTML = "YOU WIN!", this.cta.innerHTML = "PRESS <span>SPACE</span> TO SURF AGAIN";
     }, t.prototype.buildWinModal = function () {
@@ -1282,7 +1300,7 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
   h = __webpack_require__(/*! ./objects.js */ "./src/objects.js"),
   c = __webpack_require__(/*! ./gameObject.js */ "./src/gameObject.js"),
   p = __webpack_require__(/*! ./sprites.js */ "./src/sprites.js"),
-  g = __webpack_require__(/*! ./rng.js */ "./src/rng.js") //这是一行测试注释
+  g = __webpack_require__(/*! ./rng.js */ "./src/rng.js") //这是一行测试注释1122
   ,
   l = function () {
     function t() {
@@ -1291,7 +1309,7 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
     }
     return t.prototype.reset = function () {
       this.player = [], this.remotePlayers = {}, this.obstacles = [], this.surfers = [], this.enemies = [], this.chance = 0, this.spawnAccum = 25e-5, this.spawnRate = (.5 + this.spawnAccum) * this.chance,
-      // 以下生成阈值和 system.js 的 winDistance(3950) 同单位（满速帧数）。
+      // 以下生成阈值和 system.js 的 winDistance(29625) 同单位（像素）。
       // 缩短/拉长赛道时需同步等比缩放，否则敌人/道具可能整场都不会出现。
       this.nextObstacle = 188, this.nextCenterObstacle = 1500, this.freqCenterObstacle = 1125, this.freqObstacle = 38, this.nextSurfer = 750, this.freqSurfer = 188, this.nextEnemy = 7500, this.freqEnemy = 3000, this.nextPowerup = 7500, this.freqPowerup = 5625, this.nextRamp = 1875, this.freqRamp = 2625, this.nextTentacle = 2250, this.freqTentacle = 2250, this.nextDog = 10125, this.nextIsland = 375, this.freqIsland = 375, this.nextCharacter = 3750, this.freqCharacter = 1875, this.characterIncrement = 0, this.obstacleCount = 0, this.surferCount = 0, this.enemyCount = 0;
     }, t.prototype.slotRng = function (slot) {
@@ -1626,6 +1644,7 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
   h = __webpack_require__(/*! ./player.js */ "./src/player.js"),
   c = __webpack_require__(/*! ./islandSpawn.js */ "./src/islandSpawn.js"),
   p = __webpack_require__(/*! ./record.js */ "./src/record.js"),
+  g = __webpack_require__(/*! ./sprites.js */ "./src/sprites.js"),
   l = function () {
     function t(e, i) {
       if (t.system) return t.system;
@@ -1637,8 +1656,8 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
       this.ctx = t.getContext("2d"), this.ctx.imageSmoothingEnabled = !1, t.width = document.body.clientWidth, t.height = window.innerHeight, t.style.width = t.width + "px", t.style.height = t.height + "px", this.width = t.width, this.height = t.height;
     }, t.prototype.resetStats = function () {
       this.lives = 3, this.maxLives = 3, this.powerups = 0, this.powerupsCollected = 0, this.maxPowerups = 3, this.shields = 0, this.maxShields = 3, this.distance = 0, this.seed = 0,
-      // distance 现在是真实像素（原 7900 满速帧 × 7.5 基准满速）
-      this.winDistance = 59250, this.clearPath = !1, this.dodges = 0, this.avoids = 0, this.tricks = 0, this.boosts = 0, this.escapes = 0, this.score = 0, this.infiniteLives = !1, this.infinitePowerups = !1, this.krakenCodeUsed = !1, this.updateFrames = 0, this.updateEnding = !1;
+      // distance 是像素（满速时每帧 +7.5px）；29625 = 3950 帧 × 7.5 = 原赛道的一半
+      this.winDistance = 29625, this.clearPath = !1, this.dodges = 0, this.avoids = 0, this.tricks = 0, this.boosts = 0, this.escapes = 0, this.score = 0, this.infiniteLives = !1, this.infinitePowerups = !1, this.krakenCodeUsed = !1, this.updateFrames = 0, this.updateEnding = !1, this.finished = !1;
     }, t.prototype.resetGame = function () {
       this.gameState = "waiting", this.gameObjects = [], this.objUpper = [], this.objMain = [], this.objLower = [], this.objBack = [], this["interface"].reset(), this.background.reset(), this.collisions.reset(), this.spawn.reset(), this.islandspawn.reset(), this.cleanup.reset();
     }, t.prototype.reflowCanvas = function () {
@@ -1680,7 +1699,8 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
           distance: this.distance,
           trackX: window.currentPlayer.trackX,
           shield: !!window.currentPlayer.collectedDog,
-          ready: !!window.currentPlayer.readyToStart
+          ready: !!window.currentPlayer.readyToStart,
+          finished: !!this.finished
         });
       }
     }, t.prototype.updateAll = function () {
@@ -1696,9 +1716,18 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
     }, t.prototype.drawAll = function () {
       // console.log('drawAll called');
       var t = this;
-      this.ctx.clearRect(0, 0, this.width, this.height), this.gameObjects.forEach(function (e) {
+      this.ctx.clearRect(0, 0, this.width, this.height), this.drawBoundaries(), this.gameObjects.forEach(function (e) {
         return e.draw(t.ctx);
       });
+    }, t.prototype.drawBoundaries = function () {
+      // 左右边界墙：固定在地图左右边界（赛道坐标 -992 / +1376），随世界滚动
+      var spr = g.objects64Sprite(),
+        anchor = Math.floor(this.width / 2) - 32,
+        tx = h.Player.instance ? h.Player.instance.trackX : 0,
+        leftX = anchor - 992 - tx,
+        rightX = anchor + 1376 - tx,
+        off = this.distance % 64;
+      for (var y = -off; y < this.height; y += 64) spr.draw(this.ctx, Math.floor(leftX), Math.floor(y), 0, 0), spr.draw(this.ctx, Math.floor(rightX), Math.floor(y), 0, 0);
     }, t.prototype.checkWinDistance = function () {
       if (this.islandspawn.isSpawned) {
         if (this.islandspawn.island.y + 192 > h.Player.instance.y + h.Player.instance.height) return;
@@ -1714,8 +1743,12 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
       t.system.gameState = "over", h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver(), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.gameLoseEnemy = function () {
       this["interface"].drawGameOver(), h.Player.instance.loseEnemy(), this.updateEnding = !0, this.gameState = "lose", p.recordGameEnd(this, h.Player.instance), this.removeAllLives(), this.removeAllPowerups();
+    }, t.prototype.opponentFinished = function () {
+      // 对方先到终点，本地判负结束
+      if ("playing" !== this.gameState && "ready" !== this.gameState) return;
+      this.gameState = "over", h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver("OPPONENT WON"), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.gameWin = function () {
-      this.islandspawn.moveIsland(), this.distance = this.winDistance, this["interface"].drawGameWin(), h.Player.instance.win(), this.gameState = "over", p.recordGameEnd(this, h.Player.instance), setTimeout(function () {
+      this.islandspawn.moveIsland(), this.distance = this.winDistance, this["interface"].drawGameWin(), h.Player.instance.win(), this.gameState = "over", this.finished = !0, p.recordGameEnd(this, h.Player.instance), setTimeout(function () {
         c.IslandSpawn.instance.openChest();
       }, 500), setTimeout(function () {
         s.Interface.system.showWinModal();
@@ -1723,6 +1756,9 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
     }, t.prototype.applyRemoteState = function (state) {
       if (!state || !state.id) return;
       if (window.currentPlayer && state.id === window.currentPlayer.id) return;
+
+      // 对方已到达终点：本地同步判负结束
+      if (state.finished) this.opponentFinished();
       if (!this.remotePlayers[state.id]) {
         this.remotePlayers[state.id] = this.spawn.spawnRemotePlayer(state.id, state.x, state.y, state);
         return;

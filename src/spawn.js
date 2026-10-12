@@ -8,7 +8,7 @@
       , h = require('./objects.js')
       , c = require('./gameObject.js')
       , p = require('./sprites.js')
-      , g = require('./rng.js')//这是一行测试注释
+      , g = require('./rng.js')//这是一行测试注释1122
       , l = function() {
         function t() {
             if (t.instance)
@@ -25,7 +25,7 @@
             this.chance = 0,
             this.spawnAccum = 25e-5,
             this.spawnRate = (.5 + this.spawnAccum) * this.chance,
-            // 以下生成阈值和 system.js 的 winDistance(3950) 同单位（满速帧数）。
+            // 以下生成阈值和 system.js 的 winDistance(29625) 同单位（像素）。
             // 缩短/拉长赛道时需同步等比缩放，否则敌人/道具可能整场都不会出现。
             this.nextObstacle = 188,
             this.nextCenterObstacle = 1500,

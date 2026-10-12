@@ -76,10 +76,35 @@
         ,
         t.prototype.buildCharacterSelection = function() {
             this.main.innerHTML = "LET'S SURF",
-            this.cta.innerHTML = "USE <span><</span> <span>></span> AND <span>SPACE</span> TO SELECT A SURFER"
+            this.cta.innerHTML = "USE <span><</span> <span>></span> AND <span>SPACE</span> TO SELECT A SURFER",
+            this.buildInfiniteLivesToggle()
+        }
+        ,
+        t.prototype.buildInfiniteLivesToggle = function() {
+            // 选人界面的"无限生命"勾选项：只影响本地玩家（单方面）
+            var old = $("infinite-lives-toggle");
+            old && old.parentNode && old.parentNode.removeChild(old);
+            var label = document.createElement("label");
+            label.setAttribute("id", "infinite-lives-toggle");
+            label.style.cssText = "display:block;margin-top:12px;font-size:16px;color:#ffffff;text-shadow:1px 1px 2px #000000;cursor:pointer;";
+            label.innerHTML = "<input type='checkbox' id='infinite-lives-checkbox' style='vertical-align:middle;'> 无限生命";
+            label.style="z-index:999;position:absolute;left:20px;"
+            this.title.appendChild(label);
+            var cb = $("infinite-lives-checkbox");
+            cb.checked = !!s.Game.system.infiniteLives;
+            cb.addEventListener("change", function() {
+                s.Game.system.infiniteLives = cb.checked,
+                s.Game.system.interface.updateIcons()
+            })
+        }
+        ,
+        t.prototype.removeInfiniteLivesToggle = function() {
+            var old = $("infinite-lives-toggle");
+            old && old.parentNode && old.parentNode.removeChild(old)
         }
         ,
         t.prototype.buildStartScreen = function() {
+            this.removeInfiniteLivesToggle(),
             this.info.setAttribute("style", "opacity: 1;"),
             this.select.innerHTML = "",
             this.main.innerHTML = "LET'S SURF",
@@ -110,9 +135,9 @@
             this.credits && document.body.removeChild(this.credits)
         }
         ,
-        t.prototype.drawGameOver = function() {
+        t.prototype.drawGameOver = function(msg) {
             this.title.setAttribute("style", "opacity: 1;"),
-            this.main.innerHTML = "TRY AGAIN",
+            this.main.innerHTML = msg || "TRY AGAIN",
             this.cta.innerHTML = "PRESS <span>SPACE</span> TO SURF AGAIN"
         }
         ,

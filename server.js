@@ -77,7 +77,8 @@ io.on('connection', function(socket) {
       distance: Number(data.distance) || 0,
       trackX: Number(data.trackX) || 0,
       shield: !!data.shield,
-      ready: !!data.ready
+      ready: !!data.ready,
+      finished: !!data.finished
     };
 
     players[socket.id] = Object.assign({}, players[socket.id], state);
