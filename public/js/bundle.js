@@ -599,7 +599,7 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
       s.Game.system.infiniteLives && ((e = document.createElement("div")).setAttribute("class", "icon infinite"), this.lives.appendChild(e));
       s.Game.system.infinitePowerups && ((i = document.createElement("div")).setAttribute("class", "icon infinite"), this.powerups.appendChild(i));
     }, t.prototype.buildCharacterSelection = function () {
-      this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "USE <span><</span> <span>></span> AND <span>SPACE</span> TO SELECT A SURFER", this.buildInfiniteLivesToggle();
+      this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "USE <span><</span> <span>></span> AND <span>SPACE</span> TO SELECT A SURFER", this.buildInfiniteLivesToggle(), this.buildWaitOnDeathToggle();
     }, t.prototype.buildInfiniteLivesToggle = function () {
       // 选人界面的"无限生命"勾选项：只影响本地玩家（单方面）
       var old = $("infinite-lives-toggle");
@@ -618,8 +618,29 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
     }, t.prototype.removeInfiniteLivesToggle = function () {
       var old = $("infinite-lives-toggle");
       old && old.parentNode && old.parentNode.removeChild(old);
+    }, t.prototype.buildWaitOnDeathToggle = function () {
+      // 选人界面的"单方面死亡不结束游戏"勾选项：状态同步给远程玩家
+      var old = $("wait-on-death-toggle");
+      old && old.parentNode && old.parentNode.removeChild(old);
+      var label = document.createElement("label");
+      label.setAttribute("id", "wait-on-death-toggle");
+      label.style.cssText = "display:block;margin-top:12px;font-size:16px;color:#ffffff;text-shadow:1px 1px 2px #000000;cursor:pointer;";
+      label.innerHTML = "<input type='checkbox' id='wait-on-death-checkbox' style='vertical-align:middle;'> 单方面死亡不结束游戏";
+      label.style = "z-index:999;position:absolute;left:20px;top:180px;";
+      this.title.appendChild(label);
+      var cb = $("wait-on-death-checkbox");
+      cb.checked = !!s.Game.system.waitOnDeath;
+      cb.addEventListener("change", function () {
+        s.Game.system.waitOnDeath = cb.checked, s.Game.system.waitOnDeathTs = Date.now();
+      });
+    }, t.prototype.updateWaitOnDeathToggle = function () {
+      var cb = $("wait-on-death-checkbox");
+      cb && (cb.checked = !!s.Game.system.waitOnDeath);
+    }, t.prototype.removeWaitOnDeathToggle = function () {
+      var old = $("wait-on-death-toggle");
+      old && old.parentNode && old.parentNode.removeChild(old);
     }, t.prototype.buildStartScreen = function () {
-      this.removeInfiniteLivesToggle(), this.info.setAttribute("style", "opacity: 1;"), this.select.innerHTML = "", this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "PRESS <span>SPACE</span> TO START SURFING", this.info.innerHTML = "<h2>How to play</h2><p><span class='icon buttons-small'></span> Use the arrow keys or WASD keys to surf</p><p><span class='icon life-small'></span> Hitting a solid obstacle removes a life</p><p><span class='icon powerup-small'></span> Press F to use your speed boost powerup</p><p><span class='icon shield-small'></span> Rescue the dog for shields from enemies</p><p><span class='icon counter-small'></span> A surprise is waiting at the finish line</p>", this.stats.setAttribute("style", "opacity: 1;"), this.updateIcons();
+      this.removeInfiniteLivesToggle(), this.removeWaitOnDeathToggle(), this.info.setAttribute("style", "opacity: 1;"), this.select.innerHTML = "", this.main.innerHTML = "LET'S SURF", this.cta.innerHTML = "PRESS <span>SPACE</span> TO START SURFING", this.info.innerHTML = "<h2>How to play</h2><p><span class='icon buttons-small'></span> Use the arrow keys or WASD keys to surf</p><p><span class='icon life-small'></span> Hitting a solid obstacle removes a life</p><p><span class='icon powerup-small'></span> Press F to use your speed boost powerup</p><p><span class='icon shield-small'></span> Rescue the dog for shields from enemies</p><p><span class='icon counter-small'></span> A surprise is waiting at the finish line</p>", this.stats.setAttribute("style", "opacity: 1;"), this.updateIcons();
     }, t.prototype.showWaitingForOpponent = function () {
       this.main.innerHTML = "READY!", this.cta.innerHTML = "WAITING FOR OPPONENT...";
     }, t.prototype.hideScreen = function () {
@@ -628,6 +649,8 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
       this.stats.innerHTML = "", this.title.innerHTML = "", this.select.innerHTML = "", this.info.innerHTML = "", this.modal = $("win-modal"), this.credits = $("credit-modal"), this.modal && document.body.removeChild(this.modal), this.credits && document.body.removeChild(this.credits);
     }, t.prototype.drawGameOver = function (msg) {
       this.title.setAttribute("style", "opacity: 1;"), this.main.innerHTML = msg || "TRY AGAIN", this.cta.innerHTML = "PRESS <span>SPACE</span> TO SURF AGAIN";
+    }, t.prototype.drawDeadWaiting = function () {
+      this.title.setAttribute("style", "opacity: 1;"), this.main.innerHTML = "YOU DIED", this.cta.innerHTML = "WAITING FOR OPPONENT...";
     }, t.prototype.drawGameWin = function () {
       this.updateCounter(), this.title.setAttribute("style", "opacity: 1;"), this.main.innerHTML = "YOU WIN!", this.cta.innerHTML = "PRESS <span>SPACE</span> TO SURF AGAIN";
     }, t.prototype.buildWinModal = function () {
@@ -1349,7 +1372,11 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
         surfboardPose: 0,
         distance: 0,
         trackX: 0,
-        shield: !1
+        shield: !1,
+        ready: !1,
+        ended: !1,
+        finished: !1,
+        waitOnDeath: !1
       }, state);
       if (!s.Game.system.remotePlayers) s.Game.system.remotePlayers = {};
       if (s.Game.system.remotePlayers[id]) {
@@ -1366,6 +1393,9 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
       remotePlayer.trackX = remoteState.trackX || 0;
       remotePlayer.shield = !!remoteState.shield;
       remotePlayer.ready = !!remoteState.ready;
+      remotePlayer.ended = !!remoteState.ended;
+      remotePlayer.finished = !!remoteState.finished;
+      remotePlayer.waitOnDeath = !!remoteState.waitOnDeath;
       remotePlayer.surfboardSprite = p.surfboard64Sprite();
 
       // 远程玩家不做本地物理更新，位置完全由服务器广播驱动
@@ -1380,6 +1410,9 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
         if (typeof nextState.trackX === "number") this.trackX = nextState.trackX;
         this.shield = !!nextState.shield;
         this.ready = !!nextState.ready;
+        if (typeof nextState.ended === "boolean") this.ended = nextState.ended;
+        if (typeof nextState.finished === "boolean") this.finished = nextState.finished;
+        if (typeof nextState.waitOnDeath === "boolean") this.waitOnDeath = nextState.waitOnDeath;
         if (nextState.state) this.state = nextState.state;
       };
       remotePlayer.draw = function (ctx) {
@@ -1648,7 +1681,7 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
   l = function () {
     function t(e, i) {
       if (t.system) return t.system;
-      t.system = this, this.canvas = e, this.fps = i, this.interval = this.fps / 60, this.collisions = new n.Collisions(), this.spawn = new r.Spawn(), this.cleanup = new a.Cleanup(), this.background = new o.Background(), this.islandspawn = new c.IslandSpawn(), this["interface"] = new s.Interface(), this.initializeGame();
+      t.system = this, this.canvas = e, this.fps = i, this.interval = this.fps / 60, this.collisions = new n.Collisions(), this.spawn = new r.Spawn(), this.cleanup = new a.Cleanup(), this.background = new o.Background(), this.islandspawn = new c.IslandSpawn(), this["interface"] = new s.Interface(), this.waitOnDeath = !1, this.waitOnDeathTs = 0, this.initializeGame();
     }
     return t.prototype.initializeGame = function () {
       this.defineCanvas(this.canvas), this.resetStats(), this.resetGame(), this["interface"].buildInterface(), this.spawn.spawnPlayer(this.width, this.height), this["interface"].buildCharacterSelection(), this.background.setupGradient(this.winDistance), this.remotePlayers = {};
@@ -1657,7 +1690,7 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
     }, t.prototype.resetStats = function () {
       this.lives = 3, this.maxLives = 3, this.powerups = 0, this.powerupsCollected = 0, this.maxPowerups = 3, this.shields = 0, this.maxShields = 3, this.distance = 0, this.seed = 0,
       // distance 是像素（满速时每帧 +7.5px）；29625 = 3950 帧 × 7.5 = 原赛道的一半
-      this.winDistance = 29625, this.clearPath = !1, this.dodges = 0, this.avoids = 0, this.tricks = 0, this.boosts = 0, this.escapes = 0, this.score = 0, this.infiniteLives = !1, this.infinitePowerups = !1, this.krakenCodeUsed = !1, this.updateFrames = 0, this.updateEnding = !1, this.finished = !1;
+      this.winDistance = 29625, this.clearPath = !1, this.dodges = 0, this.avoids = 0, this.tricks = 0, this.boosts = 0, this.escapes = 0, this.score = 0, this.infiniteLives = !1, this.infinitePowerups = !1, this.krakenCodeUsed = !1, this.updateFrames = 0, this.updateEnding = !1, this.finished = !1, this.ended = !1;
     }, t.prototype.resetGame = function () {
       this.gameState = "waiting", this.gameObjects = [], this.objUpper = [], this.objMain = [], this.objLower = [], this.objBack = [], this["interface"].reset(), this.background.reset(), this.collisions.reset(), this.spawn.reset(), this.islandspawn.reset(), this.cleanup.reset();
     }, t.prototype.reflowCanvas = function () {
@@ -1687,7 +1720,7 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
     }, t.prototype.removeAllShields = function () {
       this.shields = 0, this["interface"].updateIcons();
     }, t.prototype.gameLoop = function (t) {
-      "playing" === this.gameState || "ready" === this.gameState ? (this.interval = t / (1e3 / this.fps), this.updateAll(), this.checkWinDistance()) : "lose" === this.gameState && this.updateGameOver();
+      "playing" === this.gameState || "ready" === this.gameState ? (this.interval = t / (1e3 / this.fps), this.updateAll(), this.checkWinDistance()) : "lose" === this.gameState && this.updateGameOver(), "dead" === this.gameState && this.checkOpponentEnded();
       this.updateDrawOrder();
       this.drawAll();
       if (window.Network && window.Network.sendState && window.currentPlayer) {
@@ -1700,7 +1733,10 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
           trackX: window.currentPlayer.trackX,
           shield: !!window.currentPlayer.collectedDog,
           ready: !!window.currentPlayer.readyToStart,
-          finished: !!this.finished
+          finished: !!this.finished,
+          ended: !!this.ended,
+          waitOnDeath: !!this.waitOnDeath,
+          waitOnDeathTs: this.waitOnDeathTs || 0
         });
       }
     }, t.prototype.updateAll = function () {
@@ -1740,15 +1776,30 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
         t.enemyGrab();
       }), this.background.gameLoseGradient()) : this.gameState = "over";
     }, t.prototype.gameLose = function () {
-      t.system.gameState = "over", h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver(), this.removeAllLives(), this.removeAllPowerups();
+      if (this.waitOnDeath) return this.gameDead();
+      t.system.gameState = "over", this.ended = !0, h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver(), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.gameLoseEnemy = function () {
-      this["interface"].drawGameOver(), h.Player.instance.loseEnemy(), this.updateEnding = !0, this.gameState = "lose", p.recordGameEnd(this, h.Player.instance), this.removeAllLives(), this.removeAllPowerups();
+      if (this.waitOnDeath) return this.gameDead();
+      this["interface"].drawGameOver(), h.Player.instance.loseEnemy(), this.updateEnding = !0, this.gameState = "lose", this.ended = !0, p.recordGameEnd(this, h.Player.instance), this.removeAllLives(), this.removeAllPowerups();
+    }, t.prototype.gameDead = function () {
+      // 单方面死亡：不结束本局，进入等待状态，直到对方也结束（撞死/被抓/到终点）
+      this.gameState = "dead", this.ended = !0, h.Player.instance.lose(), this["interface"].drawDeadWaiting(), this.removeAllLives(), this.removeAllPowerups();
+    }, t.prototype.checkOpponentEnded = function () {
+      if ("dead" !== this.gameState) return;
+      var ids = Object.keys(this.remotePlayers || {});
+      for (var i = 0; i < ids.length; i++) {
+        var rp = this.remotePlayers[ids[i]];
+        if (rp && (rp.ended || rp.finished)) {
+          this.gameState = "over", this.ended = !0, p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver(rp.finished ? "OPPONENT WON" : "TRY AGAIN");
+          return;
+        }
+      }
     }, t.prototype.opponentFinished = function () {
       // 对方先到终点，本地判负结束
       if ("playing" !== this.gameState && "ready" !== this.gameState) return;
-      this.gameState = "over", h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver("OPPONENT WON"), this.removeAllLives(), this.removeAllPowerups();
+      this.gameState = "over", this.ended = !0, h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver("OPPONENT WON"), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.gameWin = function () {
-      this.islandspawn.moveIsland(), this.distance = this.winDistance, this["interface"].drawGameWin(), h.Player.instance.win(), this.gameState = "over", this.finished = !0, p.recordGameEnd(this, h.Player.instance), setTimeout(function () {
+      this.islandspawn.moveIsland(), this.distance = this.winDistance, this["interface"].drawGameWin(), h.Player.instance.win(), this.gameState = "over", this.finished = !0, this.ended = !0, p.recordGameEnd(this, h.Player.instance), setTimeout(function () {
         c.IslandSpawn.instance.openChest();
       }, 500), setTimeout(function () {
         s.Interface.system.showWinModal();
@@ -1756,6 +1807,11 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
     }, t.prototype.applyRemoteState = function (state) {
       if (!state || !state.id) return;
       if (window.currentPlayer && state.id === window.currentPlayer.id) return;
+
+      // 同步"单方面死亡不结束游戏"开关：双方共用同一规则，谁最后勾选谁生效，对方镜像
+      if ("boolean" == typeof state.waitOnDeath && "number" == typeof state.waitOnDeathTs && state.waitOnDeathTs > this.waitOnDeathTs) {
+        this.waitOnDeath = state.waitOnDeath, this.waitOnDeathTs = state.waitOnDeathTs, this["interface"].updateWaitOnDeathToggle();
+      }
 
       // 对方已到达终点：本地同步判负结束
       if (state.finished) this.opponentFinished();

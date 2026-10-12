@@ -77,7 +77,8 @@
         t.prototype.buildCharacterSelection = function() {
             this.main.innerHTML = "LET'S SURF",
             this.cta.innerHTML = "USE <span><</span> <span>></span> AND <span>SPACE</span> TO SELECT A SURFER",
-            this.buildInfiniteLivesToggle()
+            this.buildInfiniteLivesToggle(),
+            this.buildWaitOnDeathToggle()
         }
         ,
         t.prototype.buildInfiniteLivesToggle = function() {
@@ -103,8 +104,37 @@
             old && old.parentNode && old.parentNode.removeChild(old)
         }
         ,
+        t.prototype.buildWaitOnDeathToggle = function() {
+            // 选人界面的"单方面死亡不结束游戏"勾选项：状态同步给远程玩家
+            var old = $("wait-on-death-toggle");
+            old && old.parentNode && old.parentNode.removeChild(old);
+            var label = document.createElement("label");
+            label.setAttribute("id", "wait-on-death-toggle");
+            label.style.cssText = "display:block;margin-top:12px;font-size:16px;color:#ffffff;text-shadow:1px 1px 2px #000000;cursor:pointer;";
+            label.innerHTML = "<input type='checkbox' id='wait-on-death-checkbox' style='vertical-align:middle;'> 单方面死亡不结束游戏";
+            label.style = "z-index:999;position:absolute;left:20px;top:180px;";
+            this.title.appendChild(label);
+            var cb = $("wait-on-death-checkbox");
+            cb.checked = !!s.Game.system.waitOnDeath;
+            cb.addEventListener("change", function() {
+                s.Game.system.waitOnDeath = cb.checked,
+                s.Game.system.waitOnDeathTs = Date.now()
+            })
+        }
+        ,
+        t.prototype.updateWaitOnDeathToggle = function() {
+            var cb = $("wait-on-death-checkbox");
+            cb && (cb.checked = !!s.Game.system.waitOnDeath)
+        }
+        ,
+        t.prototype.removeWaitOnDeathToggle = function() {
+            var old = $("wait-on-death-toggle");
+            old && old.parentNode && old.parentNode.removeChild(old)
+        }
+        ,
         t.prototype.buildStartScreen = function() {
             this.removeInfiniteLivesToggle(),
+            this.removeWaitOnDeathToggle(),
             this.info.setAttribute("style", "opacity: 1;"),
             this.select.innerHTML = "",
             this.main.innerHTML = "LET'S SURF",
@@ -139,6 +169,12 @@
             this.title.setAttribute("style", "opacity: 1;"),
             this.main.innerHTML = msg || "TRY AGAIN",
             this.cta.innerHTML = "PRESS <span>SPACE</span> TO SURF AGAIN"
+        }
+        ,
+        t.prototype.drawDeadWaiting = function() {
+            this.title.setAttribute("style", "opacity: 1;"),
+            this.main.innerHTML = "YOU DIED",
+            this.cta.innerHTML = "WAITING FOR OPPONENT..."
         }
         ,
         t.prototype.drawGameWin = function() {

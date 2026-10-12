@@ -78,7 +78,10 @@ io.on('connection', function(socket) {
       trackX: Number(data.trackX) || 0,
       shield: !!data.shield,
       ready: !!data.ready,
-      finished: !!data.finished
+      finished: !!data.finished,
+      ended: !!data.ended,
+      waitOnDeath: !!data.waitOnDeath,
+      waitOnDeathTs: Number(data.waitOnDeathTs) || 0
     };
 
     players[socket.id] = Object.assign({}, players[socket.id], state);

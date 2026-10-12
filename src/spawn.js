@@ -109,7 +109,11 @@
                 surfboardPose: 0,
                 distance: 0,
                 trackX: 0,
-                shield: !1
+                shield: !1,
+                ready: !1,
+                ended: !1,
+                finished: !1,
+                waitOnDeath: !1
             }, state);
             if (!s.Game.system.remotePlayers)
                 s.Game.system.remotePlayers = {};
@@ -128,6 +132,9 @@
             remotePlayer.trackX = remoteState.trackX || 0;
             remotePlayer.shield = !!remoteState.shield;
             remotePlayer.ready = !!remoteState.ready;
+            remotePlayer.ended = !!remoteState.ended;
+            remotePlayer.finished = !!remoteState.finished;
+            remotePlayer.waitOnDeath = !!remoteState.waitOnDeath;
             remotePlayer.surfboardSprite = p.surfboard64Sprite();
 
             // 远程玩家不做本地物理更新，位置完全由服务器广播驱动
@@ -143,6 +150,9 @@
                 if (typeof nextState.trackX === "number") this.trackX = nextState.trackX;
                 this.shield = !!nextState.shield;
                 this.ready = !!nextState.ready;
+                if (typeof nextState.ended === "boolean") this.ended = nextState.ended;
+                if (typeof nextState.finished === "boolean") this.finished = nextState.finished;
+                if (typeof nextState.waitOnDeath === "boolean") this.waitOnDeath = nextState.waitOnDeath;
                 if (nextState.state) this.state = nextState.state;
             };
 

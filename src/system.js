@@ -23,6 +23,8 @@
             this.background = new o.Background,
             this.islandspawn = new c.IslandSpawn,
             this.interface = new s.Interface,
+            this.waitOnDeath = !1,
+            this.waitOnDeathTs = 0,
             this.initializeGame()
         }
         return t.prototype.initializeGame = function() {
@@ -71,7 +73,8 @@
             this.krakenCodeUsed = !1,
             this.updateFrames = 0,
             this.updateEnding = !1,
-            this.finished = !1
+            this.finished = !1,
+            this.ended = !1
         }
         ,
         t.prototype.resetGame = function() {
@@ -154,7 +157,8 @@
                 this.interval = t / (1e3 / this.fps),
                 this.updateAll(),
                 this.checkWinDistance()
-            ) : "lose" === this.gameState && this.updateGameOver();
+            ) : "lose" === this.gameState && this.updateGameOver(),
+            "dead" === this.gameState && this.checkOpponentEnded();
 
             this.updateDrawOrder();
             this.drawAll();
@@ -169,7 +173,10 @@
                     trackX: window.currentPlayer.trackX,
                     shield: !!window.currentPlayer.collectedDog,
                     ready: !!window.currentPlayer.readyToStart,
-                    finished: !!this.finished
+                    finished: !!this.finished,
+                    ended: !!this.ended,
+                    waitOnDeath: !!this.waitOnDeath,
+                    waitOnDeathTs: this.waitOnDeathTs || 0
                 });
             }
         }
@@ -243,7 +250,10 @@
         }
         ,
         t.prototype.gameLose = function() {
+            if (this.waitOnDeath)
+                return this.gameDead();
             t.system.gameState = "over",
+            this.ended = !0,
             h.Player.instance.lose(),
             p.recordGameEnd(this, h.Player.instance),
             this.interface.drawGameOver(),
@@ -252,13 +262,42 @@
         }
         ,
         t.prototype.gameLoseEnemy = function() {
+            if (this.waitOnDeath)
+                return this.gameDead();
             this.interface.drawGameOver(),
             h.Player.instance.loseEnemy(),
             this.updateEnding = !0,
             this.gameState = "lose",
+            this.ended = !0,
             p.recordGameEnd(this, h.Player.instance),
             this.removeAllLives(),
             this.removeAllPowerups()
+        }
+        ,
+        t.prototype.gameDead = function() {
+            // 单方面死亡：不结束本局，进入等待状态，直到对方也结束（撞死/被抓/到终点）
+            this.gameState = "dead",
+            this.ended = !0,
+            h.Player.instance.lose(),
+            this.interface.drawDeadWaiting(),
+            this.removeAllLives(),
+            this.removeAllPowerups()
+        }
+        ,
+        t.prototype.checkOpponentEnded = function() {
+            if ("dead" !== this.gameState)
+                return;
+            var ids = Object.keys(this.remotePlayers || {});
+            for (var i = 0; i < ids.length; i++) {
+                var rp = this.remotePlayers[ids[i]];
+                if (rp && (rp.ended || rp.finished)) {
+                    this.gameState = "over",
+                    this.ended = !0,
+                    p.recordGameEnd(this, h.Player.instance),
+                    this.interface.drawGameOver(rp.finished ? "OPPONENT WON" : "TRY AGAIN");
+                    return
+                }
+            }
         }
         ,
         t.prototype.opponentFinished = function() {
@@ -266,6 +305,7 @@
             if ("playing" !== this.gameState && "ready" !== this.gameState)
                 return;
             this.gameState = "over",
+            this.ended = !0,
             h.Player.instance.lose(),
             p.recordGameEnd(this, h.Player.instance),
             this.interface.drawGameOver("OPPONENT WON"),
@@ -280,6 +320,7 @@
             h.Player.instance.win(),
             this.gameState = "over",
             this.finished = !0,
+            this.ended = !0,
             p.recordGameEnd(this, h.Player.instance),
             setTimeout(function() {
                 c.IslandSpawn.instance.openChest()
@@ -293,6 +334,13 @@
         t.prototype.applyRemoteState = function(state) {
             if (!state || !state.id) return;
             if (window.currentPlayer && state.id === window.currentPlayer.id) return;
+
+            // 同步"单方面死亡不结束游戏"开关：双方共用同一规则，谁最后勾选谁生效，对方镜像
+            if ("boolean" == typeof state.waitOnDeath && "number" == typeof state.waitOnDeathTs && state.waitOnDeathTs > this.waitOnDeathTs) {
+                this.waitOnDeath = state.waitOnDeath,
+                this.waitOnDeathTs = state.waitOnDeathTs,
+                this.interface.updateWaitOnDeathToggle()
+            }
 
             // 对方已到达终点：本地同步判负结束
             if (state.finished)
