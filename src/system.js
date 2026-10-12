@@ -286,8 +286,11 @@
         }
         ,
         t.prototype.opponentFinished = function() {
-            // 对方先到终点，本地判负结束
-            if ("playing" !== this.gameState && "ready" !== this.gameState && "dead" !== this.gameState)
+            // 对方先到终点，本地判负结束。
+            // 只在本局 playing（对方先到）或 dead（单方面死亡等待时对方到终点）时处理；
+            // 本地已重开进入 ready/waiting 时，对方的 finished 是上一局的旧状态，必须忽略，
+            // 否则会出现"我重开后对方还没回来，却弹 OPPONENT WON"的问题。
+            if ("playing" !== this.gameState && "dead" !== this.gameState)
                 return;
             this.gameState = "over",
             this.ended = !0,
@@ -299,8 +302,9 @@
         }
         ,
         t.prototype.opponentDied = function() {
-            // 对方撞死/被抓（未勾选"单方面死亡不结束游戏"时）：本地也结束，并按距离判胜负
-            if ("playing" !== this.gameState && "ready" !== this.gameState)
+            // 对方撞死/被抓（未勾选"单方面死亡不结束游戏"时）：本地也结束，并按距离判胜负。
+            // 只在本地 playing 时处理；本地已重开进入 ready/waiting 时，对方的 ended 是上一局的旧状态，应忽略。
+            if ("playing" !== this.gameState)
                 return;
             if (this.waitOnDeath)
                 return;

@@ -1427,12 +1427,13 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
         if ("waiting" === sys.gameState || "ready" === sys.gameState) {
           var px = sys.width - 160,
             py = Math.floor(sys.height / 3) - 32,
-            character = this.character || 0;
+            character = this.character || 0,
+            label = this.ready ? "PLAYER 2 - READY" : this.ended || this.finished ? "WAITING FOR PLAYER 2" : "PLAYER 2";
           ctx.save();
           ctx.font = "bold 18px sans-serif";
           ctx.fillStyle = "#ffffff";
           ctx.textAlign = "center";
-          ctx.fillText(this.ready ? "PLAYER 2 - READY" : "PLAYER 2", px + 32, py - 18);
+          ctx.fillText(label, px + 32, py - 18);
           ctx.restore();
           this.surfboardSprite && this.surfboardSprite.draw(ctx, px, py, 5, 0);
           this.sprite && this.sprite.draw(ctx, px, py, 5, character);
@@ -1802,12 +1803,16 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
         }
       }
     }, t.prototype.opponentFinished = function () {
-      // 对方先到终点，本地判负结束
-      if ("playing" !== this.gameState && "ready" !== this.gameState && "dead" !== this.gameState) return;
+      // 对方先到终点，本地判负结束。
+      // 只在本局 playing（对方先到）或 dead（单方面死亡等待时对方到终点）时处理；
+      // 本地已重开进入 ready/waiting 时，对方的 finished 是上一局的旧状态，必须忽略，
+      // 否则会出现"我重开后对方还没回来，却弹 OPPONENT WON"的问题。
+      if ("playing" !== this.gameState && "dead" !== this.gameState) return;
       this.gameState = "over", this.ended = !0, h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver("OPPONENT WON"), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.opponentDied = function () {
-      // 对方撞死/被抓（未勾选"单方面死亡不结束游戏"时）：本地也结束，并按距离判胜负
-      if ("playing" !== this.gameState && "ready" !== this.gameState) return;
+      // 对方撞死/被抓（未勾选"单方面死亡不结束游戏"时）：本地也结束，并按距离判胜负。
+      // 只在本地 playing 时处理；本地已重开进入 ready/waiting 时，对方的 ended 是上一局的旧状态，应忽略。
+      if ("playing" !== this.gameState) return;
       if (this.waitOnDeath) return;
       this.finishByDistance();
     }, t.prototype.finishByDistance = function () {

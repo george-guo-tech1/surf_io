@@ -170,12 +170,13 @@
                 if ("waiting" === sys.gameState || "ready" === sys.gameState) {
                     var px = sys.width - 160
                       , py = Math.floor(sys.height / 3) - 32
-                      , character = this.character || 0;
+                      , character = this.character || 0
+                  , label = this.ready ? "PLAYER 2 - READY" : this.ended || this.finished ? "WAITING FOR PLAYER 2" : "PLAYER 2";
                     ctx.save();
                     ctx.font = "bold 18px sans-serif";
                     ctx.fillStyle = "#ffffff";
                     ctx.textAlign = "center";
-                    ctx.fillText(this.ready ? "PLAYER 2 - READY" : "PLAYER 2", px + 32, py - 18);
+                    ctx.fillText(label, px + 32, py - 18);
                     ctx.restore();
                     this.surfboardSprite && this.surfboardSprite.draw(ctx, px, py, 5, 0);
                     this.sprite && this.sprite.draw(ctx, px, py, 5, character);
