@@ -1335,7 +1335,11 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
       this.player = [], this.remotePlayers = {}, this.obstacles = [], this.surfers = [], this.enemies = [], this.chance = 0, this.spawnAccum = 25e-5, this.spawnRate = (.5 + this.spawnAccum) * this.chance,
       // 以下生成阈值和 system.js 的 winDistance(29625) 同单位（像素）。
       // 缩短/拉长赛道时需同步等比缩放，否则敌人/道具可能整场都不会出现。
-      this.nextObstacle = 188, this.nextCenterObstacle = 1500, this.freqCenterObstacle = 1125, this.freqObstacle = 38, this.nextSurfer = 750, this.freqSurfer = 188, this.nextEnemy = 7500, this.freqEnemy = 3000, this.nextPowerup = 7500, this.freqPowerup = 5625, this.nextRamp = 1875, this.freqRamp = 2625, this.nextTentacle = 2250, this.freqTentacle = 2250, this.nextDog = 10125, this.nextIsland = 375, this.freqIsland = 375, this.nextCharacter = 3750, this.freqCharacter = 1875, this.characterIncrement = 0, this.obstacleCount = 0, this.surferCount = 0, this.enemyCount = 0;
+      this.nextObstacle = 188, this.nextCenterObstacle = 1500, this.freqCenterObstacle = 1125,
+      // 障碍物密度随进度缓慢增加：每生成 freqObstacleRamp 个障碍物，间隔缩短 1px，
+      // 直到降到 freqObstacleMin 为止。间隔越大越稀疏，越小越密集。
+      // 只依赖 obstacleCount（双方一致），所以两边地图仍完全相同。
+      this.freqObstacle = 38, this.freqObstacleMin = 22, this.freqObstacleRamp = 30, this.nextSurfer = 750, this.freqSurfer = 188, this.nextEnemy = 7500, this.freqEnemy = 3000, this.nextPowerup = 7500, this.freqPowerup = 5625, this.nextRamp = 1875, this.freqRamp = 2625, this.nextTentacle = 2250, this.freqTentacle = 2250, this.nextDog = 6000, this.freqDog = 6000, this.nextIsland = 375, this.freqIsland = 375, this.nextCharacter = 3750, this.freqCharacter = 1875, this.characterIncrement = 0, this.obstacleCount = 0, this.surferCount = 0, this.enemyCount = 0;
     }, t.prototype.slotRng = function (slot) {
       return g.mulberry32(g.hashSeed(s.Game.system.seed || 0, slot));
     }, t.prototype.slotMap = function (rng, min, max) {
@@ -1346,8 +1350,9 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
 
       // 障碍物：到达距离阈值就生成，间隔由种子抖动，保证两边赛道一致
       while (e >= this.nextObstacle) {
-        var rngOb = this.slotRng(this.obstacleCount);
-        this.spawnNewObstacle(null, rngOb, this.nextObstacle), this.nextObstacle += this.freqObstacle + Math.floor(rngOb() * 22), this.obstacleCount += 1;
+        var rngOb = this.slotRng(this.obstacleCount),
+          gap = this.freqObstacle - Math.floor(this.obstacleCount / this.freqObstacleRamp);
+        gap < this.freqObstacleMin && (gap = this.freqObstacleMin), this.spawnNewObstacle(null, rngOb, this.nextObstacle), this.nextObstacle += gap + Math.floor(rngOb() * 22), this.obstacleCount += 1;
       }
       // 冲浪者：同样按距离确定性生成
       while (e >= this.nextSurfer) {
@@ -1526,7 +1531,7 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
           return new h.Whirlpool128(r, o, 0);
         case 11:
           var p = i / 2 - 32 + this.slotMap(rng, -200, 200);
-          return this.nextDog += s.Game.system.winDistance, new h.Dog64(p, o, 10);
+          return this.nextDog += this.freqDog, new h.Dog64(p, o, 10);
       }
     }, t;
   }();

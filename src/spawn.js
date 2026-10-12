@@ -30,7 +30,12 @@
             this.nextObstacle = 188,
             this.nextCenterObstacle = 1500,
             this.freqCenterObstacle = 1125,
+            // 障碍物密度随进度缓慢增加：每生成 freqObstacleRamp 个障碍物，间隔缩短 1px，
+            // 直到降到 freqObstacleMin 为止。间隔越大越稀疏，越小越密集。
+            // 只依赖 obstacleCount（双方一致），所以两边地图仍完全相同。
             this.freqObstacle = 38,
+            this.freqObstacleMin = 22,
+            this.freqObstacleRamp = 30,
             this.nextSurfer = 750,
             this.freqSurfer = 188,
             this.nextEnemy = 7500,
@@ -41,7 +46,8 @@
             this.freqRamp = 2625,
             this.nextTentacle = 2250,
             this.freqTentacle = 2250,
-            this.nextDog = 10125,
+            this.nextDog = 6000,
+            this.freqDog = 6000,
             this.nextIsland = 375,
             this.freqIsland = 375,
             this.nextCharacter = 3750,
@@ -68,9 +74,11 @@
 
             // 障碍物：到达距离阈值就生成，间隔由种子抖动，保证两边赛道一致
             while (e >= this.nextObstacle) {
-                var rngOb = this.slotRng(this.obstacleCount);
+                var rngOb = this.slotRng(this.obstacleCount)
+                  , gap = this.freqObstacle - Math.floor(this.obstacleCount / this.freqObstacleRamp);
+                gap < this.freqObstacleMin && (gap = this.freqObstacleMin),
                 this.spawnNewObstacle(null, rngOb, this.nextObstacle),
-                this.nextObstacle += this.freqObstacle + Math.floor(rngOb() * 22),
+                this.nextObstacle += gap + Math.floor(rngOb() * 22),
                 this.obstacleCount += 1
             }
             // 冲浪者：同样按距离确定性生成
@@ -302,7 +310,7 @@
                 return new h.Whirlpool128(r, o, 0);
             case 11:
                 var p = i / 2 - 32 + this.slotMap(rng, -200, 200);
-                return this.nextDog += s.Game.system.winDistance, new h.Dog64(p, o, 10)
+                return this.nextDog += this.freqDog, new h.Dog64(p, o, 10)
             }
         }
         ,
