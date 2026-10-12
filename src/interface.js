@@ -2,7 +2,7 @@
     exports.__esModule = !0;
     var s = require('./system.js')
       , n = require('./player.js')
-      , r = require('./islandSpawn.js')
+      , r = require('./islandSpawn.js')//这是一行测试注释
       , a = function() {
         function t() {
             if (t.system)

@@ -566,7 +566,8 @@ function sendPlayerState(player) {
 exports.__esModule = !0;
 var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
   n = __webpack_require__(/*! ./player.js */ "./src/player.js"),
-  r = __webpack_require__(/*! ./islandSpawn.js */ "./src/islandSpawn.js"),
+  r = __webpack_require__(/*! ./islandSpawn.js */ "./src/islandSpawn.js") //这是一行测试注释
+  ,
   a = function () {
     function t() {
       if (t.system) return t.system;
@@ -1777,10 +1778,10 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
       }), this.background.gameLoseGradient()) : this.gameState = "over";
     }, t.prototype.gameLose = function () {
       if (this.waitOnDeath) return this.gameDead();
-      t.system.gameState = "over", this.ended = !0, h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver(), this.removeAllLives(), this.removeAllPowerups();
+      this.finishByDistance();
     }, t.prototype.gameLoseEnemy = function () {
       if (this.waitOnDeath) return this.gameDead();
-      this["interface"].drawGameOver(), h.Player.instance.loseEnemy(), this.updateEnding = !0, this.gameState = "lose", this.ended = !0, p.recordGameEnd(this, h.Player.instance), this.removeAllLives(), this.removeAllPowerups();
+      this.finishByDistance();
     }, t.prototype.gameDead = function () {
       // 单方面死亡：不结束本局，进入等待状态，直到对方也结束（撞死/被抓/到终点）
       this.gameState = "dead", this.ended = !0, h.Player.instance.lose(), this["interface"].drawDeadWaiting(), this.removeAllLives(), this.removeAllPowerups();
@@ -1790,14 +1791,27 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
       for (var i = 0; i < ids.length; i++) {
         var rp = this.remotePlayers[ids[i]];
         if (rp && (rp.ended || rp.finished)) {
-          this.gameState = "over", this.ended = !0, p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver(rp.finished ? "OPPONENT WON" : "TRY AGAIN");
+          // 对方到终点则本地判负；双方都撞死/被抓则按距离判胜负
+          rp.finished ? this.opponentFinished() : this.finishByDistance();
           return;
         }
       }
     }, t.prototype.opponentFinished = function () {
       // 对方先到终点，本地判负结束
-      if ("playing" !== this.gameState && "ready" !== this.gameState) return;
+      if ("playing" !== this.gameState && "ready" !== this.gameState && "dead" !== this.gameState) return;
       this.gameState = "over", this.ended = !0, h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver("OPPONENT WON"), this.removeAllLives(), this.removeAllPowerups();
+    }, t.prototype.opponentDied = function () {
+      // 对方撞死/被抓（未勾选"单方面死亡不结束游戏"时）：本地也结束，并按距离判胜负
+      if ("playing" !== this.gameState && "ready" !== this.gameState) return;
+      if (this.waitOnDeath) return;
+      this.finishByDistance();
+    }, t.prototype.finishByDistance = function () {
+      // 撞死/被抓导致结束时按距离判胜负：谁跑得更远谁赢
+      var ids = Object.keys(this.remotePlayers || {}),
+        opp = ids.length ? this.remotePlayers[ids[0]] : null,
+        oppDist = opp ? opp.distance || 0 : 0,
+        win = this.distance >= oppDist;
+      this.gameState = "over", this.ended = !0, win ? h.Player.instance.win() : h.Player.instance.lose(), this["interface"].drawGameOver(win ? "YOU WIN" : "OPPONENT WON"), p.recordGameEnd(this, h.Player.instance), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.gameWin = function () {
       this.islandspawn.moveIsland(), this.distance = this.winDistance, this["interface"].drawGameWin(), h.Player.instance.win(), this.gameState = "over", this.finished = !0, this.ended = !0, p.recordGameEnd(this, h.Player.instance), setTimeout(function () {
         c.IslandSpawn.instance.openChest();
@@ -1815,6 +1829,8 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
 
       // 对方已到达终点：本地同步判负结束
       if (state.finished) this.opponentFinished();
+      // 对方撞死/被抓（未勾选"单方面死亡不结束"时）：本地也一起结束
+      else if (state.ended) this.opponentDied();
       if (!this.remotePlayers[state.id]) {
         this.remotePlayers[state.id] = this.spawn.spawnRemotePlayer(state.id, state.x, state.y, state);
         return;
