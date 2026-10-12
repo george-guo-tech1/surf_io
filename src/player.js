@@ -280,16 +280,19 @@
         ,
         e.prototype.win = function() {
             this.state = "win",
+            this.readyToStart = !1,
             this.draw(r.Game.system.ctx)
         }
         ,
         e.prototype.lose = function() {
             this.state = "crash",
+            this.readyToStart = !1,
             this.draw(r.Game.system.ctx)
         }
         ,
         e.prototype.loseEnemy = function() {
             this.state = "lose",
+            this.readyToStart = !1,
             this.draw(r.Game.system.ctx),
             this.crashDog()
         }

@@ -1174,11 +1174,11 @@ var r = __webpack_require__(/*! ./system.js */ "./src/system.js"),
     }, e.prototype.crashDog = function () {
       this.collectedDog && (r.Game.system.removeAllShields(), this.collectedDog = !1, a.Spawn.instance.spawnCrashedDog());
     }, e.prototype.win = function () {
-      this.state = "win", this.draw(r.Game.system.ctx);
+      this.state = "win", this.readyToStart = !1, this.draw(r.Game.system.ctx);
     }, e.prototype.lose = function () {
-      this.state = "crash", this.draw(r.Game.system.ctx);
+      this.state = "crash", this.readyToStart = !1, this.draw(r.Game.system.ctx);
     }, e.prototype.loseEnemy = function () {
-      this.state = "lose", this.draw(r.Game.system.ctx), this.crashDog();
+      this.state = "lose", this.readyToStart = !1, this.draw(r.Game.system.ctx), this.crashDog();
     }, e.prototype.draw = function (e) {
       // console.log('draw player', this.state, this.whichFrame, this.whichPose, this.x, this.y);
       if ("waiting" === r.Game.system.gameState) {
