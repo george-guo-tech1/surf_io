@@ -105,13 +105,13 @@
         }
         ,
         t.prototype.buildWaitOnDeathToggle = function() {
-            // 选人界面的"单方面死亡不结束游戏"勾选项：状态同步给远程玩家
+            // 选人界面的"落后者死亡不结束游戏"勾选项：状态同步给远程玩家
             var old = $("wait-on-death-toggle");
             old && old.parentNode && old.parentNode.removeChild(old);
             var label = document.createElement("label");
             label.setAttribute("id", "wait-on-death-toggle");
             label.style.cssText = "display:block;margin-top:12px;font-size:16px;color:#ffffff;text-shadow:1px 1px 2px #000000;cursor:pointer;";
-            label.innerHTML = "<input type='checkbox' id='wait-on-death-checkbox' style='vertical-align:middle;'> 单方面死亡不结束游戏";
+            label.innerHTML = "<input type='checkbox' id='wait-on-death-checkbox' style='vertical-align:middle;'> 落后者死亡不结束游戏";
             label.style = "z-index:999;position:absolute;left:20px;top:180px;";
             this.title.appendChild(label);
             var cb = $("wait-on-death-checkbox");

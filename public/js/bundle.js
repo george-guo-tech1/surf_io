@@ -620,13 +620,13 @@ var s = __webpack_require__(/*! ./system.js */ "./src/system.js"),
       var old = $("infinite-lives-toggle");
       old && old.parentNode && old.parentNode.removeChild(old);
     }, t.prototype.buildWaitOnDeathToggle = function () {
-      // 选人界面的"单方面死亡不结束游戏"勾选项：状态同步给远程玩家
+      // 选人界面的"落后者死亡不结束游戏"勾选项：状态同步给远程玩家
       var old = $("wait-on-death-toggle");
       old && old.parentNode && old.parentNode.removeChild(old);
       var label = document.createElement("label");
       label.setAttribute("id", "wait-on-death-toggle");
       label.style.cssText = "display:block;margin-top:12px;font-size:16px;color:#ffffff;text-shadow:1px 1px 2px #000000;cursor:pointer;";
-      label.innerHTML = "<input type='checkbox' id='wait-on-death-checkbox' style='vertical-align:middle;'> 单方面死亡不结束游戏";
+      label.innerHTML = "<input type='checkbox' id='wait-on-death-checkbox' style='vertical-align:middle;'> 落后者死亡不结束游戏";
       label.style = "z-index:999;position:absolute;left:20px;top:180px;";
       this.title.appendChild(label);
       var cb = $("wait-on-death-checkbox");
@@ -1782,14 +1782,22 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
       }).forEach(function (t) {
         t.enemyGrab();
       }), this.background.gameLoseGradient()) : this.gameState = "over";
+    }, t.prototype.getOpponentDistance = function () {
+      var ids = Object.keys(this.remotePlayers || {}),
+        opp = ids.length ? this.remotePlayers[ids[0]] : null;
+      return opp ? opp.distance || 0 : 0;
     }, t.prototype.gameLose = function () {
-      if (this.waitOnDeath) return this.gameDead();
-      this.finishByDistance();
+      this.handleLocalDeath();
     }, t.prototype.gameLoseEnemy = function () {
-      if (this.waitOnDeath) return this.gameDead();
-      this.finishByDistance();
+      this.handleLocalDeath();
+    }, t.prototype.handleLocalDeath = function () {
+      // 我被淘汰（撞死/被抓）。
+      // 只有当「我是落后者 且 未勾选『落后者死亡不结束游戏』」时，本局才立即结束（比距离，我判负）；
+      // 其余情况（我是领先者，或勾选了）进入等待，等对方到终点或也被淘汰。
+      var iAmTrailing = this.distance < this.getOpponentDistance();
+      if (iAmTrailing && !this.waitOnDeath) this.finishByDistance();else this.gameDead();
     }, t.prototype.gameDead = function () {
-      // 单方面死亡：不结束本局，进入等待状态，直到对方也结束（撞死/被抓/到终点）
+      // 我被淘汰且本局继续：进入等待，直到对方也结束（到终点/撞死/被抓）
       this.gameState = "dead", this.ended = !0, h.Player.instance.lose(), this["interface"].drawDeadWaiting(), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.checkOpponentEnded = function () {
       if ("dead" !== this.gameState) return;
@@ -1804,17 +1812,19 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
       }
     }, t.prototype.opponentFinished = function () {
       // 对方先到终点，本地判负结束。
-      // 只在本局 playing（对方先到）或 dead（单方面死亡等待时对方到终点）时处理；
+      // 只在本局 playing（对方先到）或 dead（等待时对方到终点）时处理；
       // 本地已重开进入 ready/waiting 时，对方的 finished 是上一局的旧状态，必须忽略，
       // 否则会出现"我重开后对方还没回来，却弹 OPPONENT WON"的问题。
       if ("playing" !== this.gameState && "dead" !== this.gameState) return;
       this.gameState = "over", this.ended = !0, h.Player.instance.lose(), p.recordGameEnd(this, h.Player.instance), this["interface"].drawGameOver("OPPONENT WON"), this.removeAllLives(), this.removeAllPowerups();
     }, t.prototype.opponentDied = function () {
-      // 对方撞死/被抓（未勾选"单方面死亡不结束游戏"时）：本地也结束，并按距离判胜负。
+      // 对方被淘汰（撞死/被抓）。
       // 只在本地 playing 时处理；本地已重开进入 ready/waiting 时，对方的 ended 是上一局的旧状态，应忽略。
       if ("playing" !== this.gameState) return;
-      if (this.waitOnDeath) return;
-      this.finishByDistance();
+      // 只有当「对方是落后者（我领先）且未勾选『落后者死亡不结束游戏』」时，本局才立即结束（我赢）；
+      // 否则（对方是领先者，或勾选了）我继续跑。
+      var opponentWasTrailing = this.getOpponentDistance() < this.distance;
+      if (opponentWasTrailing && !this.waitOnDeath) this.finishByDistance();
     }, t.prototype.finishByDistance = function () {
       // 撞死/被抓导致结束时按距离判胜负：谁跑得更远谁赢
       var ids = Object.keys(this.remotePlayers || {}),
@@ -1832,14 +1842,14 @@ var s = __webpack_require__(/*! ./interface.js */ "./src/interface.js"),
       if (!state || !state.id) return;
       if (window.currentPlayer && state.id === window.currentPlayer.id) return;
 
-      // 同步"单方面死亡不结束游戏"开关：双方共用同一规则，谁最后勾选谁生效，对方镜像
+      // 同步"落后者死亡不结束游戏"开关：双方共用同一规则，谁最后勾选谁生效，对方镜像
       if ("boolean" == typeof state.waitOnDeath && "number" == typeof state.waitOnDeathTs && state.waitOnDeathTs > this.waitOnDeathTs) {
         this.waitOnDeath = state.waitOnDeath, this.waitOnDeathTs = state.waitOnDeathTs, this["interface"].updateWaitOnDeathToggle();
       }
 
       // 对方已到达终点：本地同步判负结束
       if (state.finished) this.opponentFinished();
-      // 对方撞死/被抓（未勾选"单方面死亡不结束"时）：本地也一起结束
+      // 对方被淘汰：按"落后者死亡是否结束游戏"规则处理（见 opponentDied）
       else if (state.ended) this.opponentDied();
       if (!this.remotePlayers[state.id]) {
         this.remotePlayers[state.id] = this.spawn.spawnRemotePlayer(state.id, state.x, state.y, state);
